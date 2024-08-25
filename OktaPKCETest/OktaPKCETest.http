@@ -1,6 +1,0 @@
-@OktaPKCETest_HostAddress = http://localhost:5148
-
-GET {{OktaPKCETest_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###
