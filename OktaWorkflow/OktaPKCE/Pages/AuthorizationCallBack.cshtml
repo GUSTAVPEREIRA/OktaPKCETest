@@ -1,6 +1,11 @@
 @page "/authorization-code/callback"
-
+@model AuthorizationCallBack
 <h1>Callback Page</h1>
 
 
 <p>Processando a resposta do OAuth...</p>
+
+@{
+    Request.Cookies.TryGetValue("code_verifier", out string codeVerifier);
+    Model.HandleRedirect(codeVerifier);
+}

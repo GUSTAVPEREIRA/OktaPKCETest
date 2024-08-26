@@ -9,9 +9,9 @@ namespace OktaPKCE.Pages;
 public class IndexModel : PageModel
 {
     public const string OktaDomain = "dev-34014358.okta.com";
-    public const string clientId  = "0oaj7z5sjtNh5pXfa5d7";
-    public const string redirectUri  = "http://localhost:5500/authorization-code/callback";
-    public const string authzEndpoint  = $"{OktaDomain}/oauth2/v1/authorize";
+    public const string ClientId  = "0oaj7z5sjtNh5pXfa5d7";
+    public const string RedirectUri  = "http://localhost:5500/authorization-code/callback";
+    public const string AuthEndpoint  = $"{OktaDomain}/oauth2/v1/authorize";
 
     public IActionResult OnGet()
     {
@@ -39,7 +39,7 @@ public class IndexModel : PageModel
     {
         var (codeVerifier, codeChallenge) = GeneratePkceCodes();
         var state = Base64UrlEncode(Convert.ToBase64String(RandomNumberGenerator.GetBytes(16)));
-        var authUrl = $"https://{authzEndpoint}?response_type=code&state={state}&scope=openid profile email&client_id={clientId}&redirect_uri={Uri.EscapeDataString(redirectUri)}&code_challenge={codeChallenge}&code_challenge_method=S256";
+        var authUrl = $"https://{AuthEndpoint}?response_type=code&state={state}&scope=openid profile email&client_id={ClientId}&redirect_uri={Uri.EscapeDataString(RedirectUri)}&code_challenge={codeChallenge}&code_challenge_method=S256";
 
         return new LoginResponse
         {
