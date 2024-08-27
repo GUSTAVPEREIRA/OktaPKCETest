@@ -9,10 +9,13 @@ namespace OktaPKCE.Pages;
 public class IndexModel : PageModel
 {
     public const string OktaDomain = "dev-34014358.okta.com";
-    public const string ClientId  = "0oaj7z5sjtNh5pXfa5d7";
+    public const string ClientId  = "0oaj7z5ysk96iMp6U5d7";
     public const string RedirectUri  = "http://localhost:5500/authorization-code/callback";
     public const string AuthEndpoint  = $"{OktaDomain}/oauth2/v1/authorize";
 
+    private static readonly char[] _chars = 
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789".ToCharArray();
+    
     public IActionResult OnGet()
     {
         if (Request.Cookies.ContainsKey("BearerToken"))
@@ -26,7 +29,7 @@ public class IndexModel : PageModel
         {
             HttpOnly = true,
             Secure = true,
-            SameSite = SameSiteMode.Strict,
+            SameSite = SameSiteMode.Lax,
             Expires = DateTime.Now.AddMinutes(30)
         };
         
@@ -38,9 +41,18 @@ public class IndexModel : PageModel
     private LoginResponse Authenticate()
     {
         var (codeVerifier, codeChallenge) = GeneratePkceCodes();
-        var state = Base64UrlEncode(Convert.ToBase64String(RandomNumberGenerator.GetBytes(16)));
-        var authUrl = $"https://{AuthEndpoint}?response_type=code&state={state}&scope=openid profile email&client_id={ClientId}&redirect_uri={Uri.EscapeDataString(RedirectUri)}&code_challenge={codeChallenge}&code_challenge_method=S256";
+        var state = GenerateRandomString();
+        // var authUrl = $"https://{AuthEndpoint}?response_type=code&state={state}&scope=openid profile email&client_id={ClientId}&redirect_uri={Uri.EscapeDataString(RedirectUri)}&code_challenge={codeChallenge}&code_challenge_method=S256";
 
+        var authUrl = $"https://{AuthEndpoint}" +
+                      $"?response_type=code" +
+                      $"&client_id={Uri.EscapeDataString(ClientId)}" +
+                      $"&state={Uri.EscapeDataString(state)}" +
+                      $"&scope={Uri.EscapeDataString("openid")}" +
+                      $"&redirect_uri={Uri.EscapeDataString(RedirectUri)}" +
+                      $"&code_challenge={Uri.EscapeDataString(codeChallenge)}" +
+                      $"&code_challenge_method=S256";
+        
         return new LoginResponse
         {
             CodeVerifier = codeVerifier,
@@ -48,12 +60,27 @@ public class IndexModel : PageModel
         };
     }
     
-    private string Sha256(string input)
+    public string GenerateCodeChallenge(string codeVerifier)
     {
         using var sha256 = SHA256.Create();
-        var bytes = Encoding.UTF8.GetBytes(input);
+        var bytes = Encoding.ASCII.GetBytes(codeVerifier);
         var hash = sha256.ComputeHash(bytes);
-        return Base64UrlEncode(Convert.ToBase64String(hash));
+        return Convert.ToBase64String(hash)
+            .TrimEnd('=')
+            .Replace('+', '-')
+            .Replace('/', '_');
+    }
+    
+    public static string GenerateRandomString()
+    {
+        using var rng = RandomNumberGenerator.Create();
+        var bytes = new byte[43];
+        rng.GetBytes(bytes);
+
+        return Convert.ToBase64String(bytes)
+            .TrimEnd('=')
+            .Replace('+', '-')
+            .Replace('/', '_');
     }
     
     private string Base64UrlEncode(string input)
@@ -61,13 +88,16 @@ public class IndexModel : PageModel
         var plainTextBytes = Encoding.UTF8.GetBytes(input);
         var base64 = Convert.ToBase64String(plainTextBytes);
         
-        return base64.Replace("+", "-").Replace("/", "_").Replace("=", string.Empty);
+        return base64.Replace('+', '-').Replace('/', '_').TrimEnd('=');
     }
     
     private (string CodeVerifier, string CodeChallenge) GeneratePkceCodes()
     {
-        var codeVerifier = Base64UrlEncode(Convert.ToBase64String(RandomNumberGenerator.GetBytes(32)));
-        var codeChallenge = Sha256(codeVerifier);
+        var codeVerifier = GenerateRandomString();
+        var codeChallenge = GenerateCodeChallenge(codeVerifier);
+        
+        Console.WriteLine($"Code Verifier: {codeVerifier}");
+        Console.WriteLine($"Code Challenge: {codeChallenge}");
         
         return (codeVerifier, codeChallenge);
     }

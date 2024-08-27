@@ -3,13 +3,14 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Primitives;
 using Newtonsoft.Json;
+using Okta.Auth.Sdk;
+using Okta.Sdk.Abstractions.Configuration;
 
 namespace OktaPKCE.Pages;
 
 public class AuthorizationCallBack : PageModel
 {
-    public const string OktaDomain = "dev-34014358.okta.com";
-    public const string TokenEndpoint = $"https://{OktaDomain}/oauth2/v1/token";
+    public const string TokenEndpoint = "https://dev-34014358.okta.com/oauth2/v1/token";
 
     public void OnGet()
     {
@@ -33,7 +34,7 @@ public class AuthorizationCallBack : PageModel
             };
 
             Response.Cookies.Append("Token", JsonConvert.SerializeObject(tokenResponse, Formatting.Indented), options);
-            
+
             return Redirect("privacy");
         }
 
@@ -42,28 +43,37 @@ public class AuthorizationCallBack : PageModel
 
     private async Task<Dictionary<string, object>> ExchangeCodeForTokenAsync(string code, string codeVerifier)
     {
-        var clientId = "0oaj7z5sjtNh5pXfa5d7";
-        var secretKey = "KlbrTK30dGZvWenrVL3p6cEFSCPVjtHmccKPnelJsdGMxpaQHwM3DOnrTyhpwxec";
+        var clientId = "0oaj7z5ysk96iMp6U5d7";
         var redirectUri = "http://localhost:5500/authorization-code/callback";
-        var tokenEndpoint = "https://dev-34014358.okta.com/oauth2/v1/token";
 
         var data = new Dictionary<string, string>
         {
             { "grant_type", "authorization_code" },
             { "client_id", clientId },
-            { "code", code },
             { "redirect_uri", redirectUri },
+            { "code", code },
             { "code_verifier", codeVerifier }
         };
 
         var content = new FormUrlEncodedContent(data);
-        byte[] encodedSecrets = Encoding.UTF8.GetBytes($"{clientId}:{secretKey}");
-        string secrets = Convert.ToBase64String(encodedSecrets);
-        var httpClient = new HttpClient();
-        httpClient.DefaultRequestHeaders.Add("authorization", $"Basic {secrets}");
-        var response = await httpClient.PostAsync(TokenEndpoint, content);
+        var request = new HttpRequestMessage(HttpMethod.Post, TokenEndpoint)
+        {
+            Content = content 
+        };
         
-        response.EnsureSuccessStatusCode();
+        var httpClient = new HttpClient();
+        var response = await httpClient.SendAsync(request);
+
+        try
+        {
+            response.EnsureSuccessStatusCode();
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
+
         var responseString = await response.Content.ReadAsStringAsync();
         var result = JsonConvert.DeserializeObject<Dictionary<string, object>>(responseString);
 

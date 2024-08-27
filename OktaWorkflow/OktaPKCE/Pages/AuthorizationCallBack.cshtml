@@ -7,5 +7,9 @@
 
 @{
     Request.Cookies.TryGetValue("code_verifier", out string codeVerifier);
-    Model.HandleRedirect(codeVerifier);
+    
+    if (!string.IsNullOrWhiteSpace(codeVerifier))
+    {
+        Model.HandleRedirect(codeVerifier);
+    }
 }
