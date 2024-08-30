@@ -48,7 +48,7 @@ public class IndexModel : PageModel
                       $"?response_type=code" +
                       $"&client_id={Uri.EscapeDataString(ClientId)}" +
                       $"&state={Uri.EscapeDataString(state)}" +
-                      $"&scope={Uri.EscapeDataString("openid")}" +
+                      $"&scope={Uri.EscapeDataString("openid email profile")}" +
                       $"&redirect_uri={Uri.EscapeDataString(RedirectUri)}" +
                       $"&code_challenge={Uri.EscapeDataString(codeChallenge)}" +
                       $"&code_challenge_method=S256";
